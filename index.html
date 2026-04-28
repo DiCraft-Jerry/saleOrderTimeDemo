@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>销售订单</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --menu-bg: #1f2a44;
+      --menu-text: #d6def3;
+      --menu-active: #3a5bdb;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-sub: #6b7280;
+      --line: #e8ecf4;
+      --primary: #2563eb;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 220px;
+      background: var(--menu-bg);
+      color: var(--menu-text);
+      padding: 20px 14px;
+    }
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .menu {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+    .menu li {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--menu-active);
+      color: #fff;
+      font-weight: 600;
+    }
+    .content {
+      flex: 1;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+      padding: 18px;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(31, 42, 68, 0.08);
+      padding: 14px;
+    }
+    .header h1 {
+      font-size: 22px;
+    }
+    .muted {
+      color: var(--text-sub);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+    label {
+      color: var(--text-sub);
+      font-size: 12px;
+    }
+    select, input, button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background: #fff;
+    }
+    button {
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    button.secondary {
+      background: #fff;
+      color: #334155;
+      border-color: var(--line);
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .table-wrap {
+      overflow: auto;
+      margin-top: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+    th, td {
+      border-bottom: 1px solid #edf0f5;
+      padding: 9px 8px;
+      text-align: left;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    th {
+      color: var(--text-sub);
+      background: #fafcff;
+    }
+    .pager {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      color: var(--text-sub);
+      font-size: 12px;
+    }
+    .pager-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .pager button {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .fab {
+      position: fixed;
+      right: 26px;
+      bottom: 26px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: none;
+      box-shadow: 0 8px 22px rgba(37, 99, 235, 0.35);
+      z-index: 40;
+      font-weight: 700;
+    }
+    .ai-drawer {
+      width: 0;
+      min-width: 0;
+      max-width: 0;
+      height: 100vh;
+      background: #fff;
+      border-left: 0;
+      box-shadow: none;
+      overflow: hidden;
+      transition: width .25s ease, max-width .25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    body.ai-open .ai-drawer {
+      width: 420px;
+      max-width: 420px;
+      border-left: 1px solid var(--line);
+      box-shadow: -8px 0 24px rgba(15, 23, 42, 0.12);
+    }
+    .drawer-header {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .drawer-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+    .drawer-header,
+    .drawer-body {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease;
+    }
+    body.ai-open .drawer-header,
+    body.ai-open .drawer-body {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .close-btn {
+      width: auto;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .ai-tabs {
+      display: flex;
+      gap: 8px;
+    }
+    .ai-tab {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .ai-tab.active {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: #eef4ff;
+      font-weight: 600;
+    }
+    .ai-pane {
+      display: none;
+      gap: 10px;
+    }
+    .ai-pane.active {
+      display: grid;
+    }
+    .ai-answer {
+      min-height: 120px;
+      border: 1px dashed #dbe3f0;
+      border-radius: 10px;
+      background: #fcfdff;
+      padding: 10px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .ai-result-table-wrap {
+      border: 1px solid #edf0f5;
+      border-radius: 10px;
+      overflow: auto;
+      max-height: 260px;
+    }
+    .ai-result-table {
+      min-width: 100%;
+    }
+    .ai-result-table th,
+    .ai-result-table td {
+      font-size: 12px;
+      padding: 8px;
+    }
+    body.ai-open .fab {
+      display: none;
+    }
+    @media (max-width: 1200px) {
+      .filters {
+        grid-template-columns: repeat(3, minmax(120px, 1fr));
+      }
+      body.ai-open .ai-drawer {
+        width: 360px;
+        max-width: 360px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="logo">业务看板</div>
+      <ul class="menu">
+        <li>销售订单</li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <section class="card header">
+        <h1>销售订单</h1>
+        <div class="muted">默认按下单时间降序，每页 20 条</div>
+      </section>
+
+      <section class="card">
+        <div class="filters">
+          <div class="field">
+            <label>订单类型</label>
+            <select id="orderType">
+              <option value="all">全部</option>
+              <option value="销售订单">销售订单</option>
+              <option value="采购订单">采购订单</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>订单状态</label>
+            <select id="orderStatus">
+              <option value="all">全部</option>
+              <option value="审批中">审批中</option>
+              <option value="处理中">处理中</option>
+              <option value="待确认">待确认</option>
+              <option value="已完成">已完成</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>客户名称</label>
+            <input id="customerKeyword" placeholder="输入客户关键词" />
+          </div>
+          <div class="field">
+            <label>开始日期</label>
+            <input type="date" id="startDate" value="2026-04-01" />
+          </div>
+          <div class="field">
+            <label>结束日期</label>
+            <input type="date" id="endDate" value="2026-04-30" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="queryBtn">查询</button>
+          <button class="secondary" id="resetBtn">重置</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <strong>订单列表</strong>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>订单号</th>
+                <th>客户名称</th>
+                <th>订单类型</th>
+                <th>订单状态</th>
+                <th>下单时间</th>
+                <th>订单金额</th>
+                <th>业务员</th>
+              </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <div id="pageInfo">共 0 条</div>
+          <div class="pager-actions">
+            <button class="secondary" id="prevPageBtn">上一页</button>
+            <span id="pageNumber">1 / 1</span>
+            <button class="secondary" id="nextPageBtn">下一页</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="ai-drawer" id="aiDrawer">
+      <div class="drawer-header">
+        <strong>AI 智能查询</strong>
+        <button class="secondary close-btn" id="closeDrawerBtn">收起</button>
+      </div>
+      <div class="drawer-body">
+        <div class="ai-tabs">
+          <button class="ai-tab active" data-tab="qa">直接问答</button>
+          <button class="ai-tab" data-tab="table">结构化查询</button>
+        </div>
+
+        <div class="ai-pane active" id="qaPane">
+          <div class="field">
+            <label>业务问题</label>
+            <input id="questionInput" placeholder="例如：请分析当前筛选订单的异常原因并给出建议" />
+          </div>
+          <button id="askAiBtn">提交问答</button>
+          <div>
+            <strong>分析结果</strong>
+            <div class="ai-answer" id="aiResult">等待调用...</div>
+          </div>
+        </div>
+
+        <div class="ai-pane" id="tablePane">
+          <div class="field">
+            <label>订单类型</label>
+            <select id="aiOrderType">
+              <option value="销售订单">销售订单</option>
+              <option value="采购订单">采购订单</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>时效字段</label>
+            <select id="aiMetricField">
+              <option value="客户审批时间">客户审批时间</option>
+              <option value="财务审批时间">财务审批时间</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>问题</label>
+            <input id="aiTableQuestion" placeholder="例如：找出超时TOP10订单并说明原因" />
+          </div>
+          <button id="askAiTableBtn">生成时效表</button>
+          <div>
+            <strong>时效表结果</strong>
+            <div class="ai-result-table-wrap">
+              <table class="ai-result-table">
+                <thead>
+                  <tr>
+                    <th>订单号</th>
+                    <th>订单类型</th>
+                    <th>时效字段</th>
+                    <th>时效值</th>
+                    <th>状态</th>
+                    <th>原因</th>
+                  </tr>
+                </thead>
+                <tbody id="aiTableBody">
+                  <tr><td colspan="6">暂无数据</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <button class="fab" id="aiFab">AI</button>
+
+  <script>
+    const PAGE_SIZE = 20;
+    let currentPage = 1;
+
+    const dom = {
+      orderType: document.getElementById("orderType"),
+      orderStatus: document.getElementById("orderStatus"),
+      customerKeyword: document.getElementById("customerKeyword"),
+      startDate: document.getElementById("startDate"),
+      endDate: document.getElementById("endDate"),
+      queryBtn: document.getElementById("queryBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      resultBody: document.getElementById("resultBody"),
+      pageInfo: document.getElementById("pageInfo"),
+      pageNumber: document.getElementById("pageNumber"),
+      prevPageBtn: document.getElementById("prevPageBtn"),
+      nextPageBtn: document.getElementById("nextPageBtn"),
+      aiFab: document.getElementById("aiFab"),
+      aiDrawer: document.getElementById("aiDrawer"),
+      closeDrawerBtn: document.getElementById("closeDrawerBtn"),
+      tabs: document.querySelectorAll(".ai-tab"),
+      qaPane: document.getElementById("qaPane"),
+      tablePane: document.getElementById("tablePane"),
+      questionInput: document.getElementById("questionInput"),
+      askAiBtn: document.getElementById("askAiBtn"),
+      aiResult: document.getElementById("aiResult"),
+      aiOrderType: document.getElementById("aiOrderType"),
+      aiMetricField: document.getElementById("aiMetricField"),
+      aiTableQuestion: document.getElementById("aiTableQuestion"),
+      askAiTableBtn: document.getElementById("askAiTableBtn"),
+      aiTableBody: document.getElementById("aiTableBody")
+    };
+
+    function generateMockOrders() {
+      const statusList = ["审批中", "处理中", "待确认", "已完成"];
+      const typeList = ["销售订单", "采购订单"];
+      const customers = ["华东轮胎", "浙北汽配", "远洋贸易", "鼎盛橡胶", "新城供应链"];
+      const sales = ["张磊", "王芳", "李俊", "陈晨", "周扬"];
+      const list = [];
+      for (let i = 1; i <= 58; i++) {
+        const day = 30 - (i % 28);
+        const hour = (8 + (i % 10)).toString().padStart(2, "0");
+        const minute = (10 + (i % 48)).toString().padStart(2, "0");
+        list.push({
+          orderId: `SO202604${(28000 + i).toString()}`,
+          customerName: customers[i % customers.length],
+          orderType: typeList[i % typeList.length],
+          orderStatus: statusList[i % statusList.length],
+          orderTime: `2026-04-${String(day).padStart(2, "0")} ${hour}:${minute}`,
+          orderAmount: `¥${(50000 + i * 2300).toLocaleString()}`,
+          salesName: sales[i % sales.length]
+        });
+      }
+      return list.sort((a, b) => (a.orderTime < b.orderTime ? 1 : -1));
+    }
+
+    const allOrders = generateMockOrders();
+    let filteredOrders = [...allOrders];
+
+    function getFilterPayload() {
+      return {
+        orderType: dom.orderType.value,
+        orderStatus: dom.orderStatus.value,
+        customerKeyword: dom.customerKeyword.value.trim(),
+        dateRange: {
+          startDate: dom.startDate.value,
+          endDate: dom.endDate.value
+        }
+      };
+    }
+
+    function applyFilter() {
+      const payload = getFilterPayload();
+      filteredOrders = allOrders.filter((o) => {
+        if (payload.orderType !== "all" && o.orderType !== payload.orderType) return false;
+        if (payload.orderStatus !== "all" && o.orderStatus !== payload.orderStatus) return false;
+        if (payload.customerKeyword && !o.customerName.includes(payload.customerKeyword)) return false;
+        const day = o.orderTime.slice(0, 10);
+        if (payload.dateRange.startDate && day < payload.dateRange.startDate) return false;
+        if (payload.dateRange.endDate && day > payload.dateRange.endDate) return false;
+        return true;
+      });
+      currentPage = 1;
+      renderMainTable();
+    }
+
+    function renderMainTable() {
+      const total = filteredOrders.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      if (currentPage > totalPages) currentPage = totalPages;
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const pageRows = filteredOrders.slice(start, start + PAGE_SIZE);
+
+      dom.resultBody.innerHTML = pageRows.length
+        ? pageRows.map((row) => `
+          <tr>
+            <td>${row.orderId}</td>
+            <td>${row.customerName}</td>
+            <td>${row.orderType}</td>
+            <td>${row.orderStatus}</td>
+            <td>${row.orderTime}</td>
+            <td>${row.orderAmount}</td>
+            <td>${row.salesName}</td>
+          </tr>
+        `).join("")
+        : '<tr><td colspan="7">暂无数据</td></tr>';
+
+      dom.pageInfo.textContent = `共 ${total} 条，当前显示 ${pageRows.length} 条`;
+      dom.pageNumber.textContent = `${currentPage} / ${totalPages}`;
+      dom.prevPageBtn.disabled = currentPage <= 1;
+      dom.nextPageBtn.disabled = currentPage >= totalPages;
+    }
+
+    async function callBackendAi(payload) {
+      const res = await fetch("/api/sla/ai-query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    async function callBackendAiTable(payload) {
+      const res = await fetch("/api/sla/ai-query-table", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function mockAiAnswer(payload) {
+      return {
+        summary: `【模拟分析】当前筛选条件下，${payload.orderType === "all" ? "全部订单" : payload.orderType}中“审批中”和“待确认”订单占比较高，建议优先关注近3日新增订单。`,
+        traceId: "mock-qa-trace"
+      };
+    }
+
+    function mockAiTable(payload) {
+      return {
+        rows: [
+          { orderId: "SO20260428041", orderType: payload.orderType, metricField: payload.metricField, metricValue: "7.2h", status: "超时", reason: "审批排队" },
+          { orderId: "SO20260428038", orderType: payload.orderType, metricField: payload.metricField, metricValue: "6.4h", status: "临界", reason: "资料补充" },
+          { orderId: "SO20260428033", orderType: payload.orderType, metricField: payload.metricField, metricValue: "4.9h", status: "正常", reason: "无" }
+        ]
+      };
+    }
+
+    async function submitQa() {
+      const question = dom.questionInput.value.trim();
+      if (!question) {
+        dom.aiResult.textContent = "请先输入问题。";
+        return;
+      }
+      const payload = { ...getFilterPayload(), question };
+      dom.aiResult.textContent = "调用后端中...";
+      try {
+        const data = await callBackendAi(payload);
+        dom.aiResult.textContent = `${data.summary}\n\ntraceId: ${data.traceId || "-"}`;
+      } catch (e) {
+        const mock = mockAiAnswer(payload);
+        dom.aiResult.textContent = `${mock.summary}\n\n当前为本地兜底展示。\ntraceId: ${mock.traceId}`;
+      }
+    }
+
+    async function submitAiTable() {
+      const question = dom.aiTableQuestion.value.trim();
+      if (!question) {
+        dom.aiTableBody.innerHTML = '<tr><td colspan="6">请先输入问题</td></tr>';
+        return;
+      }
+      const payload = {
+        orderType: dom.aiOrderType.value,
+        metricField: dom.aiMetricField.value,
+        question
+      };
+      dom.aiTableBody.innerHTML = '<tr><td colspan="6">生成中...</td></tr>';
+      try {
+        const data = await callBackendAiTable(payload);
+        renderAiTableRows(data.rows || []);
+      } catch (e) {
+        const mock = mockAiTable(payload);
+        renderAiTableRows(mock.rows);
+      }
+    }
+
+    function renderAiTableRows(rows) {
+      dom.aiTableBody.innerHTML = rows.length
+        ? rows.map((row) => `
+          <tr>
+            <td>${row.orderId}</td>
+            <td>${row.orderType}</td>
+            <td>${row.metricField}</td>
+            <td>${row.metricValue}</td>
+            <td>${row.status}</td>
+            <td>${row.reason}</td>
+          </tr>
+        `).join("")
+        : '<tr><td colspan="6">暂无数据</td></tr>';
+    }
+
+    dom.queryBtn.addEventListener("click", applyFilter);
+    dom.resetBtn.addEventListener("click", () => {
+      dom.orderType.value = "all";
+      dom.orderStatus.value = "all";
+      dom.customerKeyword.value = "";
+      dom.startDate.value = "2026-04-01";
+      dom.endDate.value = "2026-04-30";
+      filteredOrders = [...allOrders];
+      currentPage = 1;
+      renderMainTable();
+    });
+    dom.prevPageBtn.addEventListener("click", () => {
+      if (currentPage > 1) currentPage -= 1;
+      renderMainTable();
+    });
+    dom.nextPageBtn.addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+      if (currentPage < totalPages) currentPage += 1;
+      renderMainTable();
+    });
+
+    dom.aiFab.addEventListener("click", () => {
+      document.body.classList.add("ai-open");
+    });
+    dom.closeDrawerBtn.addEventListener("click", () => {
+      document.body.classList.remove("ai-open");
+    });
+
+    dom.tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        dom.tabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        const id = tab.dataset.tab;
+        dom.qaPane.classList.toggle("active", id === "qa");
+        dom.tablePane.classList.toggle("active", id === "table");
+      });
+    });
+
+    dom.askAiBtn.addEventListener("click", submitQa);
+    dom.askAiTableBtn.addEventListener("click", submitAiTable);
+
+    renderMainTable();
+  </script>
+</body>
+</html>
