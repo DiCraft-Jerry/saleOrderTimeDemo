@@ -47,9 +47,19 @@
       display: grid;
       gap: 8px;
     }
-    .menu li {
+    .menu-item {
       padding: 10px 12px;
       border-radius: 8px;
+      color: var(--menu-text);
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s ease, color .2s ease;
+    }
+    .menu-item:hover {
+      background: rgba(58, 91, 219, 0.28);
+      color: #fff;
+    }
+    .menu-item.active {
       background: var(--menu-active);
       color: #fff;
       font-weight: 600;
@@ -66,6 +76,14 @@
       border-radius: 12px;
       box-shadow: 0 4px 14px rgba(31, 42, 68, 0.08);
       padding: 14px;
+    }
+    .view {
+      display: none;
+      gap: 14px;
+      align-content: start;
+    }
+    .view.active {
+      display: grid;
     }
     .header h1 {
       font-size: 22px;
@@ -147,6 +165,33 @@
     }
     .pager button {
       padding: 6px 10px;
+      font-size: 12px;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .metric-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      background: #f9fbff;
+    }
+    .metric-label {
+      color: var(--text-sub);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #d32f2f;
+      line-height: 1.2;
+    }
+    .metric-sub {
+      margin-top: 6px;
+      color: var(--text-sub);
       font-size: 12px;
     }
     .fab {
@@ -280,81 +325,110 @@
     <aside class="sidebar">
       <div class="logo">业务看板</div>
       <ul class="menu">
-        <li>销售订单</li>
+        <li class="menu-item active" data-view="dashboard">仪表盘</li>
+        <li class="menu-item" data-view="orders">销售订单</li>
       </ul>
     </aside>
 
     <main class="content">
-      <section class="card header">
-        <h1>销售订单</h1>
-        <div class="muted">默认按下单时间降序，每页 20 条</div>
+      <section class="view" id="ordersView">
+        <section class="card header">
+          <h1>销售订单</h1>
+          <div class="muted">默认按下单时间降序，每页 20 条</div>
+        </section>
+
+        <section class="card">
+          <div class="filters">
+            <div class="field">
+              <label>订单类型</label>
+              <select id="orderType">
+                <option value="all">全部</option>
+                <option value="销售订单">销售订单</option>
+                <option value="采购订单">采购订单</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>订单状态</label>
+              <select id="orderStatus">
+                <option value="all">全部</option>
+                <option value="审批中">审批中</option>
+                <option value="处理中">处理中</option>
+                <option value="待确认">待确认</option>
+                <option value="已完成">已完成</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>客户名称</label>
+              <input id="customerKeyword" placeholder="输入客户关键词" />
+            </div>
+            <div class="field">
+              <label>开始日期</label>
+              <input type="date" id="startDate" value="2026-04-01" />
+            </div>
+            <div class="field">
+              <label>结束日期</label>
+              <input type="date" id="endDate" value="2026-04-30" />
+            </div>
+          </div>
+          <div class="actions">
+            <button id="queryBtn">查询</button>
+            <button class="secondary" id="resetBtn">重置</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <strong>订单列表</strong>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>订单号</th>
+                  <th>客户名称</th>
+                  <th>订单类型</th>
+                  <th>订单状态</th>
+                  <th>下单时间</th>
+                  <th>订单金额</th>
+                  <th>业务员</th>
+                </tr>
+              </thead>
+              <tbody id="resultBody"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <div id="pageInfo">共 0 条</div>
+            <div class="pager-actions">
+              <button class="secondary" id="prevPageBtn">上一页</button>
+              <span id="pageNumber">1 / 1</span>
+              <button class="secondary" id="nextPageBtn">下一页</button>
+            </div>
+          </div>
+        </section>
       </section>
 
-      <section class="card">
-        <div class="filters">
-          <div class="field">
-            <label>订单类型</label>
-            <select id="orderType">
-              <option value="all">全部</option>
-              <option value="销售订单">销售订单</option>
-              <option value="采购订单">采购订单</option>
-            </select>
+      <section class="view active" id="dashboardView">
+        <section class="card header">
+          <h1>仪表盘</h1>
+          <div class="muted">统计规则：下单超过 48 小时且订单状态不是“已完成”</div>
+        </section>
+        <section class="card">
+          <div class="dashboard-grid">
+            <div class="metric-card">
+              <div class="metric-label">超时订单数量</div>
+              <div class="metric-value" id="timeoutCount">0</div>
+              <div class="metric-sub" id="timeoutRatio">占比 0%</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">订单总数</div>
+              <div class="metric-value" id="totalOrderCount" style="color:#1f2937;">0</div>
+              <div class="metric-sub">当前样本订单总量</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">正常订单数量</div>
+              <div class="metric-value" id="normalOrderCount" style="color:#0f766e;">0</div>
+              <div class="metric-sub">未超时的订单</div>
+            </div>
           </div>
-          <div class="field">
-            <label>订单状态</label>
-            <select id="orderStatus">
-              <option value="all">全部</option>
-              <option value="审批中">审批中</option>
-              <option value="处理中">处理中</option>
-              <option value="待确认">待确认</option>
-              <option value="已完成">已完成</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>客户名称</label>
-            <input id="customerKeyword" placeholder="输入客户关键词" />
-          </div>
-          <div class="field">
-            <label>开始日期</label>
-            <input type="date" id="startDate" value="2026-04-01" />
-          </div>
-          <div class="field">
-            <label>结束日期</label>
-            <input type="date" id="endDate" value="2026-04-30" />
-          </div>
-        </div>
-        <div class="actions">
-          <button id="queryBtn">查询</button>
-          <button class="secondary" id="resetBtn">重置</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <strong>订单列表</strong>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>订单号</th>
-                <th>客户名称</th>
-                <th>订单类型</th>
-                <th>订单状态</th>
-                <th>下单时间</th>
-                <th>订单金额</th>
-                <th>业务员</th>
-              </tr>
-            </thead>
-            <tbody id="resultBody"></tbody>
-          </table>
-        </div>
-        <div class="pager">
-          <div id="pageInfo">共 0 条</div>
-          <div class="pager-actions">
-            <button class="secondary" id="prevPageBtn">上一页</button>
-            <span id="pageNumber">1 / 1</span>
-            <button class="secondary" id="nextPageBtn">下一页</button>
-          </div>
-        </div>
+        </section>
       </section>
     </main>
 
@@ -438,6 +512,9 @@
       customerKeyword: document.getElementById("customerKeyword"),
       startDate: document.getElementById("startDate"),
       endDate: document.getElementById("endDate"),
+      menuItems: document.querySelectorAll(".menu-item"),
+      ordersView: document.getElementById("ordersView"),
+      dashboardView: document.getElementById("dashboardView"),
       queryBtn: document.getElementById("queryBtn"),
       resetBtn: document.getElementById("resetBtn"),
       resultBody: document.getElementById("resultBody"),
@@ -458,7 +535,11 @@
       aiMetricField: document.getElementById("aiMetricField"),
       aiTableQuestion: document.getElementById("aiTableQuestion"),
       askAiTableBtn: document.getElementById("askAiTableBtn"),
-      aiTableBody: document.getElementById("aiTableBody")
+      aiTableBody: document.getElementById("aiTableBody"),
+      timeoutCount: document.getElementById("timeoutCount"),
+      timeoutRatio: document.getElementById("timeoutRatio"),
+      totalOrderCount: document.getElementById("totalOrderCount"),
+      normalOrderCount: document.getElementById("normalOrderCount")
     };
 
     function generateMockOrders() {
@@ -486,6 +567,36 @@
 
     const allOrders = generateMockOrders();
     let filteredOrders = [...allOrders];
+    const TIMEOUT_HOURS = 48;
+
+    function isTimeoutOrder(order) {
+      if (order.orderStatus === "已完成") return false;
+      const orderDate = new Date(order.orderTime.replace(" ", "T"));
+      const now = new Date("2026-04-30T23:59:59");
+      const diffHours = (now - orderDate) / (1000 * 60 * 60);
+      return diffHours > TIMEOUT_HOURS;
+    }
+
+    function renderDashboard() {
+      const total = allOrders.length;
+      const timeout = allOrders.filter(isTimeoutOrder).length;
+      const normal = total - timeout;
+      const ratio = total ? ((timeout / total) * 100).toFixed(1) : "0";
+      dom.timeoutCount.textContent = String(timeout);
+      dom.timeoutRatio.textContent = `占比 ${ratio}%`;
+      dom.totalOrderCount.textContent = String(total);
+      dom.normalOrderCount.textContent = String(normal);
+    }
+
+    function switchView(viewName) {
+      const isDashboard = viewName === "dashboard";
+      dom.menuItems.forEach((item) => {
+        item.classList.toggle("active", item.dataset.view === viewName);
+      });
+      dom.ordersView.classList.toggle("active", !isDashboard);
+      dom.dashboardView.classList.toggle("active", isDashboard);
+      if (isDashboard) renderDashboard();
+    }
 
     function getFilterPayload() {
       return {
@@ -671,8 +782,14 @@
 
     dom.askAiBtn.addEventListener("click", submitQa);
     dom.askAiTableBtn.addEventListener("click", submitAiTable);
+    dom.menuItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        switchView(item.dataset.view);
+      });
+    });
 
     renderMainTable();
+    switchView("dashboard");
   </script>
 </body>
 </html>
